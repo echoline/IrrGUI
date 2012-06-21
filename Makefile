@@ -1,5 +1,5 @@
 CXXFLAGS := -I/usr/include/irrlicht/ -g
-LDFLAGS := -lIrrlicht -g
+LDFLAGS := -lIrrlicht -lavcodec -lavutil -lavformat -lswscale -g
 OBJECTS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
 irrgui: $(OBJECTS)

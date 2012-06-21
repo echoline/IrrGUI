@@ -1,4 +1,5 @@
 #include "dat.h"
+#include <iostream>
 
 class FileSceneNodeCollisionCallback : public scene::ICollisionCallback {
 private:
@@ -64,6 +65,8 @@ FileSceneNode::FileSceneNode(io::IFileList *list, u32 index, core::vector3df &of
 		isadir = true;
 	} else if (isimg(fname))
 		cube->getMaterial(0).EmissiveColor.set(255, 133, 133, 55);
+	else if (isvid(fname))
+		cube->getMaterial(0).EmissiveColor.set(255, 200, 55, 55);
 	else if (isanimesh(fname))
 		cube->getMaterial(0).EmissiveColor.set(255, 0, 0, 0);
 	else
@@ -91,6 +94,12 @@ void FileSceneNode::render()
 const core::aabbox3d<float>& FileSceneNode::getBoundingBox() const
 {
 	return cube->getBoundingBox();
+}
+
+bool FileSceneNode::isvid(core::stringc name) {
+	if (name.subString(name.size() - 4, 4).equals_ignore_case(".avi"))
+		return true;
+	return false;
 }
 
 bool FileSceneNode::isimg(core::stringc name) {
@@ -148,6 +157,27 @@ void FileSceneNode::collided()
 					}
 				}
 			} else {
+				display->remove();
+				isopen = false;
+			}
+		} else if (isvid(name)) {
+			if (!isopen) {
+				core::dimension2d<f32> size(256, 128);
+				display = m_this->scenemgr->addBillboardSceneNode(this, size,
+							core::vector3df(0, height * 40 + size.Height, 0));
+				if (display) {
+					display->setMaterialType(video::EMT_DETAIL_MAP);
+					display->setMaterialFlag(video::EMF_LIGHTING, false);
+
+					videoPlayer = new murmuurVIDEO(m_this->driver, m_this->device->getTimer(), 256, 128, display);
+					if (videoPlayer) {
+						videoPlayer->open(name, 0);
+						m_this->videos.push_back(this);
+						isopen = true;
+					}
+				}
+			} else {
+				videoPlayer->close();
 				display->remove();
 				isopen = false;
 			}

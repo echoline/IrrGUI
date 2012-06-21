@@ -1,5 +1,6 @@
 #include <irrlicht.h>
 using namespace irr;
+#include "murmuurVIDEO.h"
 
 typedef struct Context Context;
 typedef class FileSceneNode FileSceneNode;
@@ -31,6 +32,7 @@ private:
 
 public:
 	scene::ISceneNodeAnimatorCollisionResponse* anim;
+	murmuurVIDEO *videoPlayer;
 
 	FileSceneNode(io::IFileList*, u32, core::vector3df&, scene::ISceneNode*, Context*);
 	~FileSceneNode();
@@ -38,6 +40,7 @@ public:
 	const core::aabbox3d<f32>& getBoundingBox() const;
 	void collided();
 	bool isimg(core::stringc);
+	bool isvid(core::stringc);
 	bool isanimesh(core::stringc);
 };
 
@@ -91,6 +94,8 @@ struct Context {
 	FileManagerSceneNode *filemgr;
 	scene::ICameraSceneNode *camera;
 	core::array<FileSceneNode*> cleanup;
+	core::array<FileSceneNode*> videos;
 	bool running;
+	video::IVideoDriver* driver;
 };
 

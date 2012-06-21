@@ -16,9 +16,10 @@ int main()
 
 	// start up the engine
 	m.device = createDevice(video::EDT_OPENGL,
-		core::dimension2d<u32>(1680,1050), 16, true, false, false, &receiver);
+		core::dimension2d<u32>(1680,1050), 16, true, // fullscreen
+					 false, false, &receiver);
 
-	video::IVideoDriver* driver = m.device->getVideoDriver();
+	m.driver = m.device->getVideoDriver();
 	m.scenemgr = m.device->getSceneManager();
 
 	// add a first person shooter style user controlled camera
@@ -39,7 +40,7 @@ int main()
 
 	u32 frames = 0;
 	// draw everything
-	while(m.device->run() && driver && m.running)
+	while(m.device->run() && m.driver && m.running)
 	{
 		if (receiver.IsKeyDown(KEY_KEY_Q))
 			m.running = false;
@@ -48,9 +49,9 @@ int main()
 			resetCamera(&m);
 
 		core::stringw caption =(L"FPS: ");
-		caption += driver->getFPS();
+		caption += m.driver->getFPS();
 		m.device->setWindowCaption(caption.c_str());
-		driver->beginScene(true, true, video::SColor(255,133,133,255));
+		m.driver->beginScene(true, true, video::SColor(255,133,133,255));
 		m.scenemgr->drawAll();
 
 		for (u32 i = 0; i != m.cleanup.size(); i++) {
@@ -60,7 +61,17 @@ int main()
 		}
 		m.cleanup.clear();
 
-		driver->endScene();
+		for (u32 i = 0; i != m.videos.size(); i++) {
+			if (m.videos[i]->videoPlayer->psVideostate == Playing) {  // play active 
+				if (!m.videos[i]->videoPlayer->refresh()) {  // no more AV 
+					m.videos[i]->videoPlayer->goToFrame(0);
+				} else {
+					m.videos[i]->videoPlayer->drawVideoTexture();
+				}
+			}
+		}
+
+		m.driver->endScene();
 
 		terrain->shift(m.camera);
 	}
