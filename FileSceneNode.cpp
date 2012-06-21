@@ -19,6 +19,9 @@ public:
 
 FileSceneNode::FileSceneNode(io::IFileList *list, u32 index, core::vector3df &offset, scene::ISceneNode *parent, Context *m) : scene::ISceneNode(parent, m->scenemgr, -1)
 {
+	videoPlayer = NULL;
+	anim = NULL;
+
 	io::IFileSystem *fs = m->device->getFileSystem();
 	file = fs->createAndOpenFile(list->getFileName(index));
 
@@ -82,6 +85,11 @@ FileSceneNode::FileSceneNode(io::IFileList *list, u32 index, core::vector3df &of
 FileSceneNode::~FileSceneNode()
 {
 //	std::cout << "delete FileSceneNode\n";
+	if (videoPlayer)
+		videoPlayer->close();
+	s32 index = m_this->videos.binary_search(this);
+	if (index != -1)
+		m_this->videos.erase(index);
 	removeAll();
 }
 
@@ -97,7 +105,12 @@ const core::aabbox3d<float>& FileSceneNode::getBoundingBox() const
 }
 
 bool FileSceneNode::isvid(core::stringc name) {
-	if (name.subString(name.size() - 4, 4).equals_ignore_case(".avi"))
+	if ((name.subString(name.size() - 4, 4).equals_ignore_case(".avi")) ||
+	    (name.subString(name.size() - 4, 4).equals_ignore_case(".mpg")) ||
+	    (name.subString(name.size() - 4, 4).equals_ignore_case(".mkv")) ||
+	    (name.subString(name.size() - 3, 3).equals_ignore_case(".rm")) ||
+	    (name.subString(name.size() - 5, 5).equals_ignore_case(".mpeg")) ||
+	    (name.subString(name.size() - 5, 5).equals_ignore_case(".divx")))
 		return true;
 	return false;
 }
@@ -169,15 +182,26 @@ void FileSceneNode::collided()
 					display->setMaterialType(video::EMT_DETAIL_MAP);
 					display->setMaterialFlag(video::EMF_LIGHTING, false);
 
-					videoPlayer = new murmuurVIDEO(m_this->driver, m_this->device->getTimer(), 256, 128, display);
+					videoPlayer = new murmuurVIDEO(m_this->driver, m_this->device->getTimer(), 256, 128, m_this, display);
 					if (videoPlayer) {
-						videoPlayer->open(name, 0);
-						m_this->videos.push_back(this);
-						isopen = true;
+						if (videoPlayer->open(name, 0)) {
+							m_this->videos.push_back(this);
+							m_this->videos.sort();
+							isopen = true;
+						} else {
+							videoPlayer->close();
+							videoPlayer = NULL;
+						}
 					}
+					if (!isopen)
+						display->remove();
 				}
 			} else {
 				videoPlayer->close();
+				videoPlayer = NULL;
+				s32 index = m_this->videos.binary_search(this);
+				if (index != -1)
+					m_this->videos.erase(index);
 				display->remove();
 				isopen = false;
 			}

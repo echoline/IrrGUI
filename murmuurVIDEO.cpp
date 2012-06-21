@@ -1,3 +1,5 @@
+#include "dat.h"
+
 // header ///////////////////////////////////////////////////////////////////////////////////////////////////
 #include "murmuurVIDEO.h"
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -15,7 +17,7 @@ using namespace gui;
 
 // audio hard quit //////////////////////////////////////////////////////////////////////////////////////////
 static volatile int quitnow = 0;
-static void handle_sigint(int signum) {
+void handle_sigint(int signum) {
     (void)signum;
     quitnow = 1;
 } ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,8 +25,9 @@ static void handle_sigint(int signum) {
 
 // constructor default //////////////////////////////////////////////////////////////////////////////////////
 murmuurVIDEO::murmuurVIDEO(irr::video::IVideoDriver *irrVideoDriver, irr::ITimer *timer,  
-                     int desiredW, int desiredH) : _vdVideoDriver(irrVideoDriver), 
+                     int desiredW, int desiredH, Context *m) : _vdVideoDriver(irrVideoDriver), 
                      _itTimer(timer), _iDesiredH(desiredH), _iDesiredW(desiredW) {    
+   this->ctx = m;
    this->mnOutputMesh = NULL;
    this->mnOutputBillboard = NULL;
    psVideostate = Closed;
@@ -34,9 +37,10 @@ murmuurVIDEO::murmuurVIDEO(irr::video::IVideoDriver *irrVideoDriver, irr::ITimer
 
 // constructor alternate mesh output ////////////////////////////////////////////////////////////////////////
 murmuurVIDEO::murmuurVIDEO(irr::video::IVideoDriver *irrVideoDriver, irr::ITimer *timer, int desiredW, 
-                     int desiredH, IMeshSceneNode *outputMesh) : _vdVideoDriver(irrVideoDriver), 
+                     int desiredH, Context *m, IMeshSceneNode *outputMesh) : _vdVideoDriver(irrVideoDriver), 
                      _itTimer(timer), _iDesiredH(desiredH), _iDesiredW(desiredW), 
                      mnOutputMesh(outputMesh)  {    
+   this->ctx = m;
    this->mnOutputBillboard = NULL;
    _initAV();   
 } ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -44,15 +48,16 @@ murmuurVIDEO::murmuurVIDEO(irr::video::IVideoDriver *irrVideoDriver, irr::ITimer
 
 // constructor alternate billboard output ////////////////////////////////////////////////////////////////////////
 murmuurVIDEO::murmuurVIDEO(irr::video::IVideoDriver *irrVideoDriver, irr::ITimer *timer, int desiredW, 
-                     int desiredH, IBillboardSceneNode *outputBillboard) : _vdVideoDriver(irrVideoDriver), 
+                     int desiredH, Context *m, IBillboardSceneNode *outputBillboard) : _vdVideoDriver(irrVideoDriver), 
                      _itTimer(timer), _iDesiredH(desiredH), _iDesiredW(desiredW), 
                      mnOutputBillboard(outputBillboard)  {    
+   this->ctx = m;
    this->mnOutputMesh = NULL;
    _initAV();   
 } ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // initialise audio/video ///////////////////////////////////////////////////////////////////////////////////
-bool murmuurVIDEO::_initAV(void) {
+bool murmuurVIDEO::_initAV() {
    // initial video flags
 #ifdef SOUND_MULTITHREADED
    _m_finished = true;
@@ -72,43 +77,12 @@ bool murmuurVIDEO::_initAV(void) {
    _img_convert_ctx = NULL;
    _fVolume = 1;  // full volume
     
-   // Register all formats and codecs
-    av_register_all();
-
 #ifdef SOUND_OPENAL
-   // signal handler
-   if (signal(SIGINT, handle_sigint) == SIG_ERR) {
-        fprintf(stderr, "Unable to set handler for SIGINT!\n");
-        return false;
-    }
-
-   // audio temp buffer
-    _abData = (ALbyte *)malloc(BUFFER_SIZE);
-    if (!_abData) {
-        fprintf(stderr, "Out of memory allocating temp buffer!\n");
-        return false;
-    }
-
-    // Initialize ALUT with default settings 
-    if (alutInit(NULL, NULL) == AL_FALSE) {
-        free(_abData);
-        fprintf(stderr, "Could not initialize ALUT (%s)!\n", alutGetErrorString(alutGetError()));
-        return false;
-    }
-
-    // Generate the buffers and source 
-    alGenBuffers(NUM_BUFFERS, _aiBuffers);
-    if (alGetError() != AL_NO_ERROR) {
-        alutExit();
-        free(_abData);
-        fprintf(stderr, "Could not create buffers...\n");
-        return false;
-    }
     alGenSources(1, &_aiSource);
     if (alGetError() != AL_NO_ERROR) {
-        alDeleteBuffers(NUM_BUFFERS, _aiBuffers);
+        alDeleteBuffers(NUM_BUFFERS, ctx->_aiBuffers);
         alutExit();
-        free(_abData);
+        free(ctx->_abData);
         fprintf(stderr, "Could not create source...\n");
         return false;
     }
@@ -118,9 +92,9 @@ bool murmuurVIDEO::_initAV(void) {
     alSourcei(_aiSource, AL_ROLLOFF_FACTOR, 0);   
     if (alGetError() != AL_NO_ERROR) {
         alDeleteSources(1, &_aiSource);
-        alDeleteBuffers(NUM_BUFFERS, _aiBuffers);
+        alDeleteBuffers(NUM_BUFFERS, ctx->_aiBuffers);
         alutExit();
-        free(_abData);
+        free(ctx->_abData);
         fprintf(stderr, "Could not set source parameters...\n");
         return false;
     }
@@ -239,7 +213,7 @@ bool murmuurVIDEO::refresh(void) {
 
 
 // refresh audio separate thread ////////////////////////////////////////////////////////////////////////////
-bool murmuurVIDEO::_refreshAudio(void) {
+bool murmuurVIDEO::_refreshAudio() {
 #ifdef SOUND_MULTITHREADED
    boost::mutex::scoped_lock l(_m_mutex);
 #endif
@@ -262,6 +236,7 @@ bool murmuurVIDEO::_refreshAudio(void) {
             alSourcePlay(_aiSource);
             if (alGetError() != AL_NO_ERROR) {
                _closeAVFile(_fpFile);
+               _fpFile = NULL;
                fprintf(stderr, "Error restarting playback...\n");
                //return false;
                goto allaudiodone;
@@ -282,12 +257,12 @@ bool murmuurVIDEO::_refreshAudio(void) {
       }
 
       // Read the next chunk of data and refill the oldest buffer 
-      _iBuffCount = _getAVAudioData(_spStreamA, _abData, BUFFER_SIZE);
+      _iBuffCount = _getAVAudioData(_spStreamA, ctx->_abData, BUFFER_SIZE);
       if (_iBuffCount > 0) {
          ALuint buf = 0;
          alSourceUnqueueBuffers(_aiSource, 1, &buf);
          if (buf != 0) {
-            alBufferData(buf, _aeFormat, _abData, _iBuffCount, _iRate);
+            alBufferData(buf, _aeFormat, ctx->_abData, _iBuffCount, _iRate);
             alSourceQueueBuffers(_aiSource, 1, &buf);
             // For each successfully unqueued buffer, increment the
             // base time. The retrieved sample offset for timing is
@@ -391,6 +366,7 @@ bool murmuurVIDEO::open(core::stringc sFileName, int iStartIndex) {
       // AL_EXT_MCFORMATS extension to provide output of 4 and 5.1 audio streams 
       if (_getAVAudioInfo(_spStreamA, &_iRate, &_iChannels, &_iBits) != 0) {
          _closeAVFile(_fpFile);
+         _fpFile = NULL;
          fprintf(stderr, "Error getting audio info for %s\n", sFileName.c_str());
          return false;
       }
@@ -415,6 +391,7 @@ bool murmuurVIDEO::open(core::stringc sFileName, int iStartIndex) {
       }
       if (_aeFormat == 0) {
          _closeAVFile(_fpFile);
+         _fpFile = NULL;
          fprintf(stderr, "Unhandled format (%d channels, %d bits) for %s", _iChannels, _iBits, sFileName.c_str());
          return false;
       }
@@ -441,15 +418,16 @@ bool murmuurVIDEO::open(core::stringc sFileName, int iStartIndex) {
          // Fill and queue the buffers 
          for(j = 0;j < NUM_BUFFERS;j++) {
             // Make sure we get some data to give to the buffer 
-            _iBuffCount = _getAVAudioData(_spStreamA, _abData, BUFFER_SIZE);
+            _iBuffCount = _getAVAudioData(_spStreamA, ctx->_abData, BUFFER_SIZE);
             if(_iBuffCount <= 0) return false;
 
             // Buffer the data with OpenAL and queue the buffer onto the source 
-            alBufferData(_aiBuffers[j], _aeFormat, _abData, _iBuffCount, _iRate);
-            alSourceQueueBuffers(_aiSource, 1, &_aiBuffers[j]);
+            alBufferData(ctx->_aiBuffers[j], _aeFormat, ctx->_abData, _iBuffCount, _iRate);
+            alSourceQueueBuffers(_aiSource, 1, &ctx->_aiBuffers[j]);
          }
          if (alGetError() != AL_NO_ERROR) {
             _closeAVFile(_fpFile);
+            _fpFile = NULL;
             fprintf(stderr, "Error buffering initial data...\n");
             return false;
          }
@@ -458,6 +436,7 @@ bool murmuurVIDEO::open(core::stringc sFileName, int iStartIndex) {
          alSourcePlay(_aiSource);
          if (alGetError() != AL_NO_ERROR) {
             _closeAVFile(_fpFile);
+            _fpFile = NULL;
             fprintf(stderr, "Error starting playback...\n");
             return false;
          }
@@ -550,7 +529,7 @@ FilePtr murmuurVIDEO::_openAVFile(const char *fname) {
 void murmuurVIDEO::_closeAVFile(FilePtr file) {
     size_t i;
 
-    if(!file) return;
+    if(!file || !file->Streams) return;
 
     for(i = 0;i < file->StreamsSize;i++) {
         avcodec_close(file->Streams[i]->CodecCtx);
@@ -559,6 +538,8 @@ void murmuurVIDEO::_closeAVFile(FilePtr file) {
         free(file->Streams[i]);
     }
     free(file->Streams);
+    file->Streams = NULL;
+    file->StreamsSize = 0;
 
     avformat_close_input(&file->FmtCtx);
     free(file);
@@ -815,7 +796,32 @@ static int decode_audio(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          const uint8_t *buf, int buf_size)
 {
-#if LIBAVCODEC_VERSION_MAJOR >= 53 || (LIBAVCODEC_VERSION_MAJOR==52 && LIBAVCODEC_VERSION_MINOR>=32)
+#if 0 
+//LIBAVCODEC_VERSION_MAJOR >= 54 || (LIBAVCODEC_VERSION_MAJOR==53 && LIBAVCODEC_VERSION_MINOR>=25)
+    AVPacket avpkt;
+    av_init_packet(&avpkt);
+    avpkt.data = const_cast<uint8_t *>(buf);
+    avpkt.size = buf_size;
+    static AVFrame decoded_frame;
+    int got_frame = 0;
+
+    avcodec_get_frame_defaults(&decoded_frame);
+    decoded_frame.data[0] = (uint8_t*)samples;
+
+    int ret = avcodec_decode_audio4(avctx, &decoded_frame, &got_frame, &avpkt);
+    if (ret < 0) {
+        perror("avcodec_decode_audio4");
+	return ret;
+    }
+
+    if (!got_frame) {
+	fprintf(stderr, "avcodec_decode_audio4: got_frame == 0\n");
+	return -1;
+    }
+
+    *frame_size_ptr = av_samples_get_buffer_size(NULL, avctx->channels, decoded_frame.nb_samples, avctx->sample_fmt, 1);
+    return ret;
+#elif LIBAVCODEC_VERSION_MAJOR >= 53 || (LIBAVCODEC_VERSION_MAJOR==52 && LIBAVCODEC_VERSION_MINOR>=32)
 
     // following code segment copied from ffmpeg's avcodec_decode_audio2()
     // implementation to avoid warnings about deprecated function usage.
@@ -995,7 +1001,7 @@ int murmuurVIDEO::getCurrentFrame(void) {
 
 
 // close the current active file ////////////////////////////////////////////////////////////////////////////
-void murmuurVIDEO::close(void) {
+void murmuurVIDEO::close() {
    // Free the RGB image
    if (_iBuffer != NULL)
       delete [] _iBuffer;
@@ -1013,7 +1019,7 @@ void murmuurVIDEO::close(void) {
    // clear the frame buffer
    _frFrame_Buffer.clear();
    //_vdVideoDriver->removeTexture(_txCurrentTexture);
-   _imCurrentImage->drop();
+   //_imCurrentImage->drop();
 
 #ifdef SOUND_OPENAL
    // All data has been streamed in. Wait until the source stops playing it 
@@ -1024,13 +1030,14 @@ void murmuurVIDEO::close(void) {
 
     // All files done. Delete the source and buffers, and close OpenAL 
     alDeleteSources(1, &_aiSource);
-    alDeleteBuffers(NUM_BUFFERS, _aiBuffers);
-    alutExit();
-    free(_abData);
+   // alDeleteBuffers(NUM_BUFFERS, ctx->_aiBuffers);
+   // alutExit();
+   // free(ctx->_abData);
 #endif
 
    // close the file
    _closeAVFile(_fpFile);
+   _fpFile = NULL;
     fprintf(stderr, "\nDone.\n");
 
    bVideoLoaded = false;

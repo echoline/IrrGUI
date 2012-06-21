@@ -1,5 +1,7 @@
 #include "dat.h"
 
+extern void handle_sigint(int signum);
+
 void resetCamera(Context *m)
 {
 	m->camera->setPosition(m->origin + core::vector3df(0, 400, -800));
@@ -11,12 +13,47 @@ int main()
 	Context m;
 	m.running = true;
 
+	// Register all formats and codecs
+	av_register_all();
+
+#ifdef SOUND_OPENAL
+	// signal handler
+	if (signal(SIGINT, handle_sigint) == SIG_ERR) {
+		fprintf(stderr, "Unable to set handler for SIGINT!\n");
+		return -1;
+	}
+
+	// audio temp buffer
+	m._abData = (ALbyte *)malloc(BUFFER_SIZE);
+	if (!m._abData) {
+		fprintf(stderr, "Out of memory allocating temp buffer!\n");
+		return -1;
+	}
+
+	// Initialize ALUT with default settings 
+	if (alutInit(NULL, NULL) == AL_FALSE) {
+		free(m._abData);
+		fprintf(stderr, "Could not initialize ALUT (%s)!\n", alutGetErrorString(alutGetError()));
+		return -1;
+	}
+
+	// Generate the buffers and source 
+	alGenBuffers(NUM_BUFFERS, m._aiBuffers);
+	if (alGetError() != AL_NO_ERROR) {
+		alutExit();
+		free(m._abData);
+		fprintf(stderr, "Could not create buffers...\n");
+		return -1;
+	}
+#endif
+
 	// Event Receiver
 	EventReceiver receiver;
 
 	// start up the engine
 	m.device = createDevice(video::EDT_OPENGL,
-		core::dimension2d<u32>(1680,1050), 16, true, // fullscreen
+//		core::dimension2d<u32>(1680,1050), 16, true, // fullscreen
+		core::dimension2d<u32>(800,600), 16, false,
 					 false, false, &receiver);
 
 	m.driver = m.device->getVideoDriver();

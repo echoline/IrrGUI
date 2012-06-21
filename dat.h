@@ -1,9 +1,10 @@
 #include <irrlicht.h>
 using namespace irr;
-#include "murmuurVIDEO.h"
 
 typedef struct Context Context;
 typedef class FileSceneNode FileSceneNode;
+
+#include "murmuurVIDEO.h"
 
 class FileManagerSceneNode : public scene::ISceneNode {
 private:
@@ -27,8 +28,8 @@ private:
 	bool isadir;
 	f32 height;
 	bool isopen;
-	scene::IBillboardSceneNode *display;
 	scene::ISceneNode *model;
+	scene::IBillboardSceneNode *display;
 
 public:
 	scene::ISceneNodeAnimatorCollisionResponse* anim;
@@ -97,5 +98,9 @@ struct Context {
 	core::array<FileSceneNode*> videos;
 	bool running;
 	video::IVideoDriver* driver;
+#ifdef SOUND_OPENAL
+	ALbyte *_abData;
+	ALuint _aiBuffers[NUM_BUFFERS];
+#endif
 };
 

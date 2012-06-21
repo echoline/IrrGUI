@@ -1,7 +1,7 @@
 #ifndef __MURMUUR_VIDEO_H__ /////////////////////////////////////////////////////////////////////////////////
 #define __MURMUUR_VIDEO_H__  ////////////////////////////////////////////////////////////////////////////////
 //#define SOUND_MULTITHREADED  // comment this out to not multi thread the audio //////////////////////////////
-//#define SOUND_OPENAL  // comment this out for no sound //////////////////////////////////////////////////////
+#define SOUND_OPENAL  // comment this out for no sound //////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Original code sources from juliusctw, Hansel, stepan1117
 // Heavily Modified/Merged by theSpecial1
@@ -104,10 +104,8 @@ private: ///////////////////////////////////////////////////////////////////////
     irr::s32* _pimage;
 
 #ifdef SOUND_OPENAL
-    ALuint _aiBuffers[NUM_BUFFERS];
     ALuint _aiSource;
     ALint _aiState;
-    ALbyte *_abData;
    ALenum _aeOldFormat;
    ALenum _aeFormat;
 #endif
@@ -138,15 +136,17 @@ private: ///////////////////////////////////////////////////////////////////////
    bool _m_finished;
 #endif
    bool _refreshAudio(void);
+
+   Context *ctx;
 public: /////////////////////////////////////////////////////////////////////////////////////////////////////
    ePlaystate psVideostate;
    irr::scene::IMeshSceneNode *mnOutputMesh;
    irr::scene::IBillboardSceneNode *mnOutputBillboard;
    bool bVideoLoaded;
 
-   murmuurVIDEO(irr::video::IVideoDriver *irrVideoDriver, irr::ITimer *timer, int desiredW, int desiredH);
-   murmuurVIDEO(irr::video::IVideoDriver *irrVideoDriver, irr::ITimer *timer, int desiredW, int desiredH, irr::scene::IMeshSceneNode *outputMesh);
-   murmuurVIDEO(irr::video::IVideoDriver *irrVideoDriver, irr::ITimer *timer, int desiredW, int desiredH, irr::scene::IBillboardSceneNode *);
+   murmuurVIDEO(irr::video::IVideoDriver *irrVideoDriver, irr::ITimer *timer, int desiredW, int desiredH, Context*);
+   murmuurVIDEO(irr::video::IVideoDriver *irrVideoDriver, irr::ITimer *timer, int desiredW, int desiredH, Context*, irr::scene::IMeshSceneNode *outputMesh);
+   murmuurVIDEO(irr::video::IVideoDriver *irrVideoDriver, irr::ITimer *timer, int desiredW, int desiredH, Context*, irr::scene::IBillboardSceneNode *);
 
    bool open(irr::core::stringc sFileName, int iStartIndex);
    bool refresh(void);

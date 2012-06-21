@@ -23,12 +23,16 @@ FileManagerSceneNode::FileManagerSceneNode(Context *m) : ISceneNode(m->scenemgr-
 FileManagerSceneNode::~FileManagerSceneNode()
 {
 	//std::cout << "delete FileManagerSceneNode\n";
-	if (m_this->running) for (u32 index = 0; index != files.size(); index++) {
-		files[index]->grab();
-		files[index]->anim->grab();
-		m_this->cleanup.push_back(files[index]);
+	if (m_this->running) {
+		for (u32 index = 0; index != files.size(); index++) {
+			files[index]->grab();
+			if (files[index]->anim)
+				files[index]->anim->grab();
+			m_this->cleanup.push_back(files[index]);
+		}
 	}
 	files.clear();
+	m_this->videos.clear();
 	removeAll();
 }
 
