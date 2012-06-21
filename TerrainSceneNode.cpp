@@ -1,5 +1,4 @@
 #include "dat.h"
-#include <iostream>
 
 TerrainSceneNode::TerrainSceneNode(Context *m) : ISceneNode(m->scenemgr->getRootSceneNode(), m->scenemgr, -1)
 {
@@ -20,7 +19,7 @@ TerrainSceneNode::TerrainSceneNode(Context *m) : ISceneNode(m->scenemgr->getRoot
 		bbox.addInternalBox(terrains[i][j]->getTransformedBoundingBox());
 	}
 
-	std::cerr << getBoundingBox().MaxEdge.X - getBoundingBox().MinEdge.X << std::endl;
+	//std::cerr << getBoundingBox().MaxEdge.X - getBoundingBox().MinEdge.X << std::endl;
 
 	// create triangle selector for the terrain     
 	scene::ITriangleSelector* selector = m->scenemgr->createTriangleSelectorFromBoundingBox(this);
@@ -54,7 +53,7 @@ void TerrainSceneNode::centerOn(scene::ISceneNode *in, int x, int y) {
 	if ((x == 1) && (y == 1))
 		return;
 
-	std::cerr << x << " " << y << std::endl;
+//	std::cerr << x << " " << y << std::endl;
 
 	core::vector3df position(in->getPosition());
 

@@ -27,6 +27,7 @@ private:
 	f32 height;
 	bool isopen;
 	scene::IBillboardSceneNode *display;
+	scene::ISceneNode *model;
 
 public:
 	scene::ISceneNodeAnimatorCollisionResponse* anim;
@@ -36,6 +37,8 @@ public:
 	void render();
 	const core::aabbox3d<f32>& getBoundingBox() const;
 	void collided();
+	bool isimg(core::stringc);
+	bool isanimesh(core::stringc);
 };
 
 class TerrainSceneNode : public scene::ISceneNode {

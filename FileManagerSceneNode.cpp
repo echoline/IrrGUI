@@ -1,5 +1,4 @@
 #include "dat.h"
-#include <iostream>
 
 FileManagerSceneNode::FileManagerSceneNode(Context *m) : ISceneNode(m->scenemgr->getRootSceneNode(), m->scenemgr, -1)
 {
