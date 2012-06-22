@@ -87,9 +87,9 @@ FileSceneNode::~FileSceneNode()
 //	std::cout << "delete FileSceneNode\n";
 	if (videoPlayer)
 		videoPlayer->close();
-	s32 index = m_this->videos.binary_search(this);
-	if (index != -1)
-		m_this->videos.erase(index);
+//	s32 index = m_this->videos.binary_search(this);
+//	if (index != -1)
+//		m_this->videos.erase(index);
 	removeAll();
 }
 
@@ -108,6 +108,7 @@ bool FileSceneNode::isvid(core::stringc name) {
 	if ((name.subString(name.size() - 4, 4).equals_ignore_case(".avi")) ||
 	    (name.subString(name.size() - 4, 4).equals_ignore_case(".mpg")) ||
 	    (name.subString(name.size() - 4, 4).equals_ignore_case(".mkv")) ||
+	    (name.subString(name.size() - 4, 4).equals_ignore_case(".ogm")) ||
 	    (name.subString(name.size() - 3, 3).equals_ignore_case(".rm")) ||
 	    (name.subString(name.size() - 5, 5).equals_ignore_case(".mpeg")) ||
 	    (name.subString(name.size() - 5, 5).equals_ignore_case(".divx")))

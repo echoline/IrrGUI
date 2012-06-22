@@ -104,6 +104,7 @@ private: ///////////////////////////////////////////////////////////////////////
     irr::s32* _pimage;
 
 #ifdef SOUND_OPENAL
+    ALuint _aiBuffers[NUM_BUFFERS];
     ALuint _aiSource;
     ALint _aiState;
    ALenum _aeOldFormat;

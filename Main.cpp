@@ -36,15 +36,6 @@ int main()
 		fprintf(stderr, "Could not initialize ALUT (%s)!\n", alutGetErrorString(alutGetError()));
 		return -1;
 	}
-
-	// Generate the buffers and source 
-	alGenBuffers(NUM_BUFFERS, m._aiBuffers);
-	if (alGetError() != AL_NO_ERROR) {
-		alutExit();
-		free(m._abData);
-		fprintf(stderr, "Could not create buffers...\n");
-		return -1;
-	}
 #endif
 
 	// Event Receiver
@@ -52,8 +43,8 @@ int main()
 
 	// start up the engine
 	m.device = createDevice(video::EDT_OPENGL,
-		core::dimension2d<u32>(1680,1050), 16, true, // fullscreen
-//		core::dimension2d<u32>(800,600), 16, false,
+//		core::dimension2d<u32>(1680,1050), 16, true, // fullscreen
+		core::dimension2d<u32>(800,600), 16, false,
 					 false, false, &receiver);
 
 	m.driver = m.device->getVideoDriver();

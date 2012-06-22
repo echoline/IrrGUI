@@ -79,9 +79,18 @@ bool murmuurVIDEO::_initAV() {
    _fVolume = 1;  // full volume
     
 #ifdef SOUND_OPENAL
+    // Generate the buffers and source 
+    alGenBuffers(NUM_BUFFERS, _aiBuffers);
+    if (alGetError() != AL_NO_ERROR) {
+        alutExit();
+        free(ctx->_abData);
+        fprintf(stderr, "Could not create buffers...\n");
+        return false;
+    }
+
     alGenSources(1, &_aiSource);
     if (alGetError() != AL_NO_ERROR) {
-        alDeleteBuffers(NUM_BUFFERS, ctx->_aiBuffers);
+        alDeleteBuffers(NUM_BUFFERS, _aiBuffers);
         alutExit();
         free(ctx->_abData);
         fprintf(stderr, "Could not create source...\n");
@@ -93,7 +102,7 @@ bool murmuurVIDEO::_initAV() {
     alSourcei(_aiSource, AL_ROLLOFF_FACTOR, 0);   
     if (alGetError() != AL_NO_ERROR) {
         alDeleteSources(1, &_aiSource);
-        alDeleteBuffers(NUM_BUFFERS, ctx->_aiBuffers);
+        alDeleteBuffers(NUM_BUFFERS, _aiBuffers);
         alutExit();
         free(ctx->_abData);
         fprintf(stderr, "Could not set source parameters...\n");
@@ -431,8 +440,8 @@ bool murmuurVIDEO::open(core::stringc sFileName, int iStartIndex) {
             if(_iBuffCount <= 0) return false;
 
             // Buffer the data with OpenAL and queue the buffer onto the source 
-            alBufferData(ctx->_aiBuffers[j], _aeFormat, ctx->_abData, _iBuffCount, _iRate);
-            alSourceQueueBuffers(_aiSource, 1, &ctx->_aiBuffers[j]);
+            alBufferData(_aiBuffers[j], _aeFormat, ctx->_abData, _iBuffCount, _iRate);
+            alSourceQueueBuffers(_aiSource, 1, &_aiBuffers[j]);
          }
          if (alGetError() != AL_NO_ERROR) {
             _closeAVFile(_fpFile);
@@ -805,19 +814,22 @@ static int decode_audio(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          const uint8_t *buf, int buf_size)
 {
-#if 0 
-//LIBAVCODEC_VERSION_MAJOR >= 54 || (LIBAVCODEC_VERSION_MAJOR==53 && LIBAVCODEC_VERSION_MINOR>=25)
+#if LIBAVCODEC_VERSION_MAJOR >= 54 || (LIBAVCODEC_VERSION_MAJOR==53 && LIBAVCODEC_VERSION_MINOR>=25)
     AVPacket avpkt;
     av_init_packet(&avpkt);
     avpkt.data = const_cast<uint8_t *>(buf);
     avpkt.size = buf_size;
-    static AVFrame decoded_frame;
+    static AVFrame *decoded_frame = NULL;
     int got_frame = 0;
+    int bps = av_get_bytes_per_sample(avctx->sample_fmt);
 
-    avcodec_get_frame_defaults(&decoded_frame);
-    decoded_frame.data[0] = (uint8_t*)samples;
+    if (decoded_frame == NULL) {
+        decoded_frame = avcodec_alloc_frame();
+    } else {
+        avcodec_get_frame_defaults(decoded_frame);
+    }
 
-    int ret = avcodec_decode_audio4(avctx, &decoded_frame, &got_frame, &avpkt);
+    int ret = avcodec_decode_audio4(avctx, decoded_frame, &got_frame, &avpkt);
     if (ret < 0) {
         perror("avcodec_decode_audio4");
 	return ret;
@@ -828,7 +840,8 @@ static int decode_audio(AVCodecContext *avctx, int16_t *samples,
 	return -1;
     }
 
-    *frame_size_ptr = av_samples_get_buffer_size(NULL, avctx->channels, decoded_frame.nb_samples, avctx->sample_fmt, 1);
+    *frame_size_ptr = decoded_frame->nb_samples * avctx->channels * bps;
+    memcpy(samples, decoded_frame->data[0], *frame_size_ptr); // :( TODO
     return ret;
 #elif LIBAVCODEC_VERSION_MAJOR >= 53 || (LIBAVCODEC_VERSION_MAJOR==52 && LIBAVCODEC_VERSION_MINOR>=32)
 
@@ -1039,7 +1052,7 @@ void murmuurVIDEO::close() {
 
     // All files done. Delete the source and buffers, and close OpenAL 
     alDeleteSources(1, &_aiSource);
-   // alDeleteBuffers(NUM_BUFFERS, ctx->_aiBuffers);
+    alDeleteBuffers(NUM_BUFFERS, _aiBuffers);
    // alutExit();
    // free(ctx->_abData);
 #endif

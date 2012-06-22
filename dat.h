@@ -100,7 +100,6 @@ struct Context {
 	video::IVideoDriver* driver;
 #ifdef SOUND_OPENAL
 	ALbyte *_abData;
-	ALuint _aiBuffers[NUM_BUFFERS];
 #endif
 };
 
