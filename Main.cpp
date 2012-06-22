@@ -52,8 +52,8 @@ int main()
 
 	// start up the engine
 	m.device = createDevice(video::EDT_OPENGL,
-//		core::dimension2d<u32>(1680,1050), 16, true, // fullscreen
-		core::dimension2d<u32>(800,600), 16, false,
+		core::dimension2d<u32>(1680,1050), 16, true, // fullscreen
+//		core::dimension2d<u32>(800,600), 16, false,
 					 false, false, &receiver);
 
 	m.driver = m.device->getVideoDriver();

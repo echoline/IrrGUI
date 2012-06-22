@@ -175,7 +175,7 @@ void FileSceneNode::collided()
 			}
 		} else if (isvid(name)) {
 			if (!isopen) {
-				core::dimension2d<f32> size(256, 128);
+				core::dimension2d<f32> size(256, 256);
 				display = m_this->scenemgr->addBillboardSceneNode(this, size,
 							core::vector3df(0, height * 40 + size.Height, 0));
 				if (display) {

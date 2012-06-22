@@ -3,6 +3,7 @@
 // header ///////////////////////////////////////////////////////////////////////////////////////////////////
 #include "murmuurVIDEO.h"
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <iostream>
 
 
 // namespaces ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -187,6 +188,14 @@ bool murmuurVIDEO::refresh(void) {
                   fprintf(stderr, "Cannot re-initialize the conversion context!\n");
                   return false;
                }
+            }
+
+            if (mnOutputBillboard && _first_time) {
+               int w = _spStreamV->CodecCtx->width;
+               int h = _spStreamV->CodecCtx->height;
+
+               std::cerr << w << 'x' << h << std::endl;
+               mnOutputBillboard->setSize(irr::core::dimension2d<irr::f32>(w, h));
             }
 
             sws_scale(_img_convert_ctx, _frFrame->data, _frFrame->linesize, 0, _spStreamV->CodecCtx->height, _frFrameRGB->data, _frFrameRGB->linesize);
