@@ -43,8 +43,9 @@ int main()
 
 	// start up the engine
 	m.device = createDevice(video::EDT_OPENGL,
-//		core::dimension2d<u32>(1680,1050), 16, true, // fullscreen
-		core::dimension2d<u32>(800,600), 16, false,
+		core::dimension2d<u32>(1680,1050), 16, true, // fullscreen
+//		core::dimension2d<u32>(1280,800), 16, true, // fullscreen
+//		core::dimension2d<u32>(800,600), 16, false,
 					 false, false, &receiver);
 
 	m.driver = m.device->getVideoDriver();
@@ -79,7 +80,7 @@ int main()
 		core::stringw caption =(L"FPS: ");
 		caption += m.driver->getFPS();
 		m.device->setWindowCaption(caption.c_str());
-		m.driver->beginScene(true, true, video::SColor(255,133,133,255));
+		m.driver->beginScene(true, true, video::SColor(255,133,133,133));
 		m.scenemgr->drawAll();
 
 		for (u32 i = 0; i != m.cleanup.size(); i++) {
@@ -106,6 +107,12 @@ int main()
 
 	// delete device
 	m.device->drop();
+
+#ifdef SOUND_OPENAL
+	alutExit();
+	free(m._abData);
+#endif
+
 	return 0;
 }
 

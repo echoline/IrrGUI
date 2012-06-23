@@ -8,7 +8,7 @@ TerrainSceneNode::TerrainSceneNode(Context *m) : ISceneNode(m->scenemgr->getRoot
 
 	scene::IAnimatedMesh *mesh = m->scenemgr->addHillPlaneMesh("ground",
 		core::dimension2d<f32>(1000.0f, 1000.0f), core::dimension2d<u32>(100, 100));
-	mesh->getMeshBuffer(0)->getMaterial().EmissiveColor.set(255, 55, 133, 55);
+	mesh->getMeshBuffer(0)->getMaterial().EmissiveColor.set(255, 33, 33, 33);
 
 	for (int i=0; i < 3; i++) for (int j=0; j < 3; j++) {
 		core::vector3df position((i-1)*100000, 0, (j-1)*100000);

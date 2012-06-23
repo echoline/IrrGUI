@@ -30,7 +30,7 @@ FileSceneNode::FileSceneNode(io::IFileList *list, u32 index, core::vector3df &of
 	}
 
 	core::vector3df position = offset;
-	height = (float)(1.0 + file->getSize()/65536.0);
+	height = (float)(1.0 + file->getSize()/536870912.0);
 	if (height > 5.0f)
 		height = 5.0f;
 	position.Y += height * 20.0f;
@@ -71,7 +71,7 @@ FileSceneNode::FileSceneNode(io::IFileList *list, u32 index, core::vector3df &of
 	else if (isvid(fname))
 		cube->getMaterial(0).EmissiveColor.set(255, 200, 55, 55);
 	else if (isanimesh(fname))
-		cube->getMaterial(0).EmissiveColor.set(255, 0, 0, 0);
+		cube->getMaterial(0).EmissiveColor.set(255, 255, 155, 255);
 	else
 		cube->getMaterial(0).EmissiveColor.set(255, 55, 55, 55);
 
@@ -106,11 +106,13 @@ const core::aabbox3d<float>& FileSceneNode::getBoundingBox() const
 
 bool FileSceneNode::isvid(core::stringc name) {
 	if ((name.subString(name.size() - 4, 4).equals_ignore_case(".avi")) ||
+	    (name.subString(name.size() - 4, 4).equals_ignore_case(".wmv")) ||
 	    (name.subString(name.size() - 4, 4).equals_ignore_case(".mpg")) ||
+	    (name.subString(name.size() - 5, 5).equals_ignore_case(".mpeg")) ||
+	    (name.subString(name.size() - 4, 4).equals_ignore_case(".mp4")) ||
 	    (name.subString(name.size() - 4, 4).equals_ignore_case(".mkv")) ||
 	    (name.subString(name.size() - 4, 4).equals_ignore_case(".ogm")) ||
 	    (name.subString(name.size() - 3, 3).equals_ignore_case(".rm")) ||
-	    (name.subString(name.size() - 5, 5).equals_ignore_case(".mpeg")) ||
 	    (name.subString(name.size() - 5, 5).equals_ignore_case(".divx")))
 		return true;
 	return false;
@@ -210,7 +212,7 @@ void FileSceneNode::collided()
 			if (!isopen) {
 				scene::IAnimatedMesh *mesh = m_this->scenemgr->getMesh(name);
 				if (mesh) {
-					mesh->getMeshBuffer(0)->getMaterial().EmissiveColor.set(255, 133, 133, 133);
+					mesh->getMeshBuffer(0)->getMaterial().EmissiveColor.set(255, 55, 55, 55);
 					model = m_this->scenemgr->addAnimatedMeshSceneNode(
 						mesh, this, -1, core::vector3df(0, height * 60, 0));
 					if (model) {
